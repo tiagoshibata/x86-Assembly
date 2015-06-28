@@ -1,0 +1,36 @@
+Primary and Secondary ATA buses: IO ports 0x1F0 - 0x1F7 and 0x170 - 0x177
+Device Control Registers/Alternate Status: 0x3F6 and 0x376
+IRQ14 and IRQ15
+If the next two buses exist, they are normally controlled by IO ports 0x1E8 through 0x1EF, and 0x168 through 0x16F.
+The associated Device Control Registers/Alternate Status ports are IO ports 0x3E6, and 0x366.
+Checar BSY e DRQ antes de cada comando, esperar 400 ns após selecionar drive OU esperar BSY e DRQ antes de selecionar outro drive
+Em erros, ERR OU DF setados
+Flush do cache após escrita
+Bus flutuante alto em Regular Status
+Porta "Drive Select" (Bus primário = 1F6h): 0Ah = Master, 0Bh = Slave
+IDENTIFY: Seleciona drive (c/ delay), seta Sectorcount, LBAlo, LBAmid, e LBAhi para 0 (1F2h até 1F5h), IDENTIFY para porta de comando (1F7h), ler status (1F7h),
+se 0, drive não existe, checa Status (1F7h) até BSY limpo, checa LBAmid e LBAhi (0x1F4 e 0x1F5), se != 0, drive não é ATA. Se for, continua checando Status até
+DRQ ou ERR setados. Então esperar ERR limpo e ler 256 words de dados (1F0h).
+http://wiki.osdev.org/ATA_PIO_Mode#.22Command_Aborted.22
+http://wiki.osdev.org/ATA_PIO_Mode#Interesting_information_returned_by_IDENTIFY
+Registradores:
+	0 - dados
+	1 - Capacidades/erros (ATAPI)
+	2 - # setores para acessar
+	3 - # do setor/LBAlo (específico p/ CHS/LBA28/LBA48)
+	4 - Cyl Low/LBAmid - endereço do setor
+	5 - Cyl High/LBAhi - endereço do setor
+	6 - Drive/cabeça - seleciona drive e/ou cabeça, pode suportar bits adicionais de endereçamento ou flags
+	7 - Comandos/Status - Escreve comandos/lê status
+Status (se BSY setado, outros são indefinidos):
+	0 - ERR (ocorreu erro, enviar comando ou resetar para limpar)
+	3 - DRQ (drive possui dados para enviar ou está pronto para receber)
+	4 - SRV (Overlapped Mode Service Request) (?)
+	5 - DF (Drive Fault Error - não seta ERR)
+	6 - RDY (limpo se desligado ou após erro, senão setado)
+	7 - BSY (preparando p/ receber ou enviar, esperar limpar. Se travar setado, resetar drive)
+Device Control Register (escrita, se lido retorna Status, mas não afeta int's)
+	1 - nIEN - setar para desativar interrupções
+	2 - SRST - setar para resetar todos os drives no BUS (único modo de resetar fora de ATAPI). Após setar e limpar, master é selecionado automaticamente.
+	7 - HOB - setar para receber o byte mais alto do último valor LBA48 enviado
+IRQ's - apenas PIO: EOI para PIC

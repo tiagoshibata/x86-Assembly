@@ -1,0 +1,68 @@
+GDT 32 e 64
+
+;Limpa tela:
+cld
+push dword 0B800h
+pop es
+xor edi,edi
+;background (azul), fonte (vermelho), char, background, fonte, char:
+mov ax,0001_0100_0000_0000b;eax,0001_0100_0000_0000_0001_0100_0000_0000b
+mov cx,1000;500
+rep stosw
+
+xor di,di
+.loop:
+	lodsb;al=[ds:si], DF ? si-- : si++
+	stosb;[es:di]=al, di = DF ? DI - 1 : DI + 1
+	inc di
+	test al,al
+jnz .loop
+
+Full CGA 16-color palette
+0	black
+#000000
+
+1	blue
+#0000AA
+
+2	green
+#00AA00
+
+3	cyan
+#00AAAA
+
+4	red
+#AA0000
+
+5	magenta
+#AA00AA
+
+6	brown
+#AA5500
+
+7	light gray
+#AAAAAA
+
+8	gray
+#555555
+
+9	light blue
+#5555FF
+
+10	light green
+#55FF55
+
+11	light cyan
+#55FFFF
+
+12	light red
+#FF5555
+
+13	light magenta
+#FF55FF
+
+14	yellow
+#FFFF55
+
+15	white (high intensity)
+#FFFFFF

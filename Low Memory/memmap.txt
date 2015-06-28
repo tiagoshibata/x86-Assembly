@@ -1,0 +1,6 @@
+0..2FFFh = paginação
+3000h = * para fim do map. da mem
+3001h = * para última struct de modo de vídeo
+3002h..fim = map. da mem
+fim..fim + 512 = VbeInfoBlock
+modos de vídeo

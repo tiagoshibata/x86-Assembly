@@ -1,0 +1,287 @@
+; %ifndef USE64
+; 	%ifndef NATIVE_WIDTH
+; 		%ifenv %!NATIVE_WIDTH
+; 			%define NATIVE_WIDTH	%!NATIVE_WIDTH
+; 		%else
+; 			%error NATIVE_WIDTH, USE32 and USE64 are undefined!
+; 		%endif
+; 	%endif
+; 	%if (NATIVE_WIDTH == 32)
+; 	%elif (NATIVE_WIDTH == 64)
+; 		%define USE64
+; 	%else
+; 		%assign temp	NATIVE_WIDTH
+; 		%error Invalid data width temp; should be 32 or 64.
+; 	%endif
+; %endif
+%ifndef (NATIVE_WIDTH)
+	%error NATIVE_WIDTH undefined.
+%endif
+
+%if (NATIVE_WIDTH == 64)
+	%warning Generating 64 bits code.
+%elif (NATIVE_WIDTH == 32)
+	%warning Generating 32 bits code.
+%else
+	%error Invalid NATIVE_WIDTH. Only 64 and 32 are allowed.
+%endif
+
+%macro DATA	2
+	; align, define
+	%assign temp	$ % %1
+	%if (temp)
+		%warning Unaligned data, aligning in temp bytes.
+		align temp, 0
+	%endif
+	%if (%1 == 1)
+		db %2
+	%elif (%1 == 2)
+		dw %2
+	%elif (%1 == 4)
+		dd %2
+	%elif (%1 == 8)
+		dq %2
+	%else
+		%assign temp %1
+		%error Invalid data size: temp bytes.
+	%endif
+%endmecro
+
+%macro BOOLEAN	0-1
+	%if (%0 == 0)
+		db FALSE	; Set initial value to FALSE if not specified
+	%else
+		%if ((%1 != FALSE) & (%1 != TRUE))
+			%assign temp	%1
+			%warning BOOLEAN valid data types are TRUE (1) and FALSE (0). temp isn't a valid value.
+		%endif
+		db %1
+	%endif
+%endmacro
+%define TRUE	1
+%define FALSE	0
+%define boolean BOOLEAN
+%define true	TRUE
+%define false	FALSE
+
+%macro INTN 0-1		; Native width, signed
+	%if (%0 == 1)
+		DATA NATIVE_WIDTH, temp
+	%else
+		DATA NATIVE_WIDTH, 0
+	%endif
+%endmacro
+%define intn INTN
+
+%macro UINTN 0-1	; Native width, unsigned
+	%define temp 0
+	%if (%0 == 1)
+		%if (%1 < 0)
+			%warning Using Unsigned Int < 0!
+		%endif
+		DATA NATIVE_WIDTH, temp
+	%else
+		DATA NATIVE_WIDTH, 0
+	%endif
+%endmacro
+%define EFI_STATUS	UINTN
+%define EFI_TPL		UINTN
+%define uintn		UINTN
+%define efi_status	EFI_STATUS
+%define efi_tpl		EFI_TPL
+
+%macro INT8 0-1
+	%if (%0 == 0)
+		db 0
+	%else
+		db %1
+	%endif
+%endmacro
+%define int8 INT8
+
+%macro UINT8 0-1
+	%if (%0 == 0)
+		db 0
+	%else
+		%if (%1 < 0)
+			%warning Using Unsigned 8-bit Int < 0!
+		%endif
+		db %1
+	%endif
+%endmacro
+%define uint8 UINT8
+
+%macro INT16 0-1
+	%if (%0 == 0)
+		DATA 2, 0
+	%else
+		DATA 2, %1
+	%endif
+%endmacro
+%define int16 INT16
+
+%macro UINT16 0-1
+	%if (%0 == 0)
+		DATA 2, 0
+	%else
+		%if (%1 < 0)
+			%warning Using Unsigned 16-bit Int < 0!
+		%endif
+		DATA 2, %1
+	%endif
+%endmacro
+%define uint16 UINT16
+
+%macro INT32 0-1
+	%if (%0 == 0)
+		DATA 4, 0
+	%else
+		DATA 4, %1
+	%endif
+%endmacro
+%define int32 INT32
+
+%macro UINT32 0-1
+	%if (%0 == 0)
+		DATA 4, 0
+	%else
+		%if (%1 < 0)
+			%warning Using Unsigned 32-bit Int < 0!
+		%endif
+		DATA 4, %1
+	%endif
+%endmacro
+%define uint32 UINT32
+
+%macro INT64 0-1
+	%if (%0 == 0)
+		DATA 8, 0
+	%else
+		DATA 8, %1
+	%endif
+%endmacro
+%define int64 INT64
+
+%macro UINT64 0-1
+	%if (%0 == 0)
+		DATA 8, 0
+	%else
+		%if (%1 < 0)
+			%warning Using Unsigned 64-bit Int < 0!
+		%endif
+		DATA 8, %1
+	%endif
+%endmacro
+%define EFI_LBA	UINT64
+%define uint64	UINT64
+%define efi_lba	EFI_LBA
+
+%macro CHAR16 1+
+	%if ($ & 1)
+		%warning Unaligned Unicode String, aligning in 1 byte.
+		db 0
+	%endif
+	%rep %0
+		db __utf16__ (%1)
+	%rotate 1
+	%endrep
+%endmacro
+%define char16 CHAR16
+
+%macro EFI_GUID 0-1
+	DATA 8, %1 & 0FFFFFFFFFFFFFFFFh
+	dq %1 >> 64
+%endmacro
+
+%macro EFI_MAC_ADDRESS 0-1	; 32-byte buffer containing a network Media Access Control address.
+
+%endmacro
+
+
+
+Table 6. Common UEFI Data Types
+Mnemonic Description
+BOOLEAN Logical Boolean. 1-byte value containing a 0 for FALSE or a 1 for TRUE. Other
+       values are undefined.
+INTN Signed value of native width. (4 bytes on supported 32-bit processor instructions, 8
+    bytes on supported 64-bit processor instructions)
+UINTN Unsigned value of native width. (4 bytes on supported 32-bit processor instructions,
+     8 bytes on supported 64-bit processor instructions)
+INT8 1-byte signed value.
+UINT8 1-byte unsigned value.
+INT16 2-byte signed value.
+UINT16 2-byte unsigned value.
+INT32 4-byte signed value.
+UINT32 4-byte unsigned value.
+INT64 8-byte signed value.
+UINT64 8-byte unsigned value.
+CHAR8 1-byte character. Unless otherwise specified, all 1-byte or ASCII characters and
+     strings are stored in 8-bit ASCII encoding format, using the ISO-Latin-1 character
+    set.
+CHAR16 2-byte Character. Unless otherwise specified all characters and strings are stored in
+      the UCS-2 encoding format as defined by Unicode 2.1 and ISO/IEC 10646
+     standards.
+VOID Undeclared type.
+EFI_GUID 128-bit buffer containing a unique identifier value. Unless otherwise specified,
+        aligned on a 64-bit boundary.
+EFI_STATUS Status code. Type UINTN.
+EFI_HANDLE A collection of related interfaces. Type VOID *.
+EFI_EVENT Handle to an event structure. Type VOID *.
+EFI_LBA Logical block address. Type UINT64.
+EFI_TPL Task priority level. Type UINTN.
+EFI_MAC_ADDRESS 32-byte buffer containing a network Media Access Control address.
+EFI_IPv4_ADDRESS 4-byte buffer. An IPv4 internet protocol address.
+EFI_IPv6_ADDRESS 16-byte buffer. An IPv6 internet protocol address.
+EFI_IP_ADDRESS 16-byte buffer aligned on a 4-byte boundary. An IPv4 or IPv6 internet protocol
+              address.
+
+
+
+<Enumerated Type> Element of a standard ANSI C enum type declaration. Type INT32.or UINT32.
+                 ANSI C does not define the size of sign of an enum so they should never be used in
+                structures. ANSI C integer promotion rules make INT32 or UINT32 interchangeable
+               when passed as an argument to a function.
+sizeof (VOID *) 4 bytes on supported 32-bit processor instructions. 8 bytes on supported 64-bit
+               processor instructions.
+Bitfields Bitfields are ordered such that bit 0 is the least significant bit.
+
+
+
+
+
+Table 7. Modifiers for Common UEFI Data Types
+Mnemonic Description
+IN Datum is passed to the function.
+OUT Datum is returned from the function.
+OPTIONAL Passing the datum to the function is optional, and a NULL may be
+        passed if the value is not supplied.
+CONST Datum is read-only.
+EFIAPI Defines the calling convention for UEFI interfaces.
+
+
+
+All functions are called with the C language calling convention. The general-purpose registers that
+are volatile across function calls are eax, ecx, and edx.
+
+
+
+
+Firmware boot services and runtime services run in the following processor execution mode prior to
+the OS calling ExitBootServices():
+• Uniprocessor, as described in chapter 8.4 of:
+— Intel 64 and IA-32 Architectures Software Developer's Manual
+ — Volume 3, System Programming Guide, Part 1
+  — Order Number: 253668-033US, December 2009
+   — http://www.intel.com/products/processor/manuals/
+• Protected mode
+• Paging mode not enabled
+• Selectors are set to be flat and are otherwise not used
+• Interrupts are enabled–though no interrupt services are supported other than the UEFI boot
+     services timer functions (All loaded device drivers are serviced synchronously by “polling.”)
+• Direction flag in EFLAGs is clear
+• Other general purpose flag registers are undefined
+• 128 KiB, or more, of available stack space
+• Floating-point control word must be initialized to 0x027F (all exceptions masked, double-
+precision, round-to-nearest)
+• Multimedia-extensions control word (if supported) must be initialized to 0x1F80 (all exceptions
+masked, round-to-nearest, flush to zero for masked underflow).
